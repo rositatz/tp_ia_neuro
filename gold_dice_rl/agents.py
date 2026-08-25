@@ -127,7 +127,13 @@ def move_to_action(move, obs, env):
             return (BUY_SHIELD, None)
         else:
             return (PASS, None)
-
+        
+    if name == "UPGRADE":
+        if UPGRADE in valid:
+            return (UPGRADE, None)
+        else:
+            return (PASS, None)
+        
     if name == "STORE_BEST_DIE":
             if STORE_BEST_DIE in valid:
                 return (STORE_BEST_DIE, None)
