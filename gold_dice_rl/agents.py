@@ -78,8 +78,8 @@ def get_state(obs):
     # Estas variables pueden crecer para siempre pero para Q learning se necesita que la cantidad de estados sea finita, sino cada estado se ve una sola vez y no se aprende
     # Ponemos un limite a cada variable para solucionar esto con min(valor, limite)
     gold_lvl = gold_level(obs["gold"], obs["num_dice"], obs["dice_bonus"])
-    dice_lvl = min(obs["num_dice"], 6)
-    bonus_lvl = min(obs["dice_bonus"], 6)
+    dice_lvl = min(obs["num_dice"], 10)
+    bonus_lvl = min(obs["dice_bonus"], 10)
     shield_lvl = min(obs["shields"], 2)
     stored_lvl = min(obs["stored_value"], 6)
     max_lvl = min(obs["roll_max"], 8)
