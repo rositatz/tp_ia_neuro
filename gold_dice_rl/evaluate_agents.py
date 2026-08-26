@@ -1,7 +1,9 @@
 import numpy as np
 
 from env import GoldDiceEnv
-from agents import RandomLegalAgent, SimpleExpectancyAgent
+from agents import RandomLegalAgent, SimpleExpectancyAgent, QLearningAgent
+import pickle
+
 
 
 def evaluate(agent, n_episodes=1000, seed=0, obs_mode="dict"):
@@ -32,10 +34,14 @@ def evaluate(agent, n_episodes=1000, seed=0, obs_mode="dict"):
 
 
 if __name__ == "__main__":
+    with open("q_table.pkl", "rb") as f:
+        Q_trained = pickle.load(f)
+
     agents = {
         "RandomLegal": RandomLegalAgent(seed=123),
         "SimpleExpectancy": SimpleExpectancyAgent(),
+        "QLearning": QLearningAgent(Q_trained),
     }
 
     for name, agent in agents.items():
-        print(name, evaluate(agent, n_episodes=1000, seed=123))
+        print(name, evaluate(agent, n_episodes=1000, seed=0))  # seed=0: la que pide el leaderboard

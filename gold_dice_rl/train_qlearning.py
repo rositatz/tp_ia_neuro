@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+import pickle
 
 from env import GoldDiceEnv
 from agents import get_state, move_to_action, N_MOVES, QLearningAgent
@@ -39,13 +40,13 @@ def record_checkpoint(history, episode_rewards, episode, reward_window=500):
 
 
 
-def train_q_learning(n_episodes=200_000, alpha=0.05,
+def train_q_learning(n_episodes=1000000, alpha=0.05,
     gamma=1.0,          # sin descuento: el retorno total = puntos finales, que es justo lo que queremos maximizar
-    eps_start=1.0, eps_end=0.05, eval_every=2_500,
+    eps_start=1.0, eps_end=0.05, eval_every=2500,
     seed=0,
     # evaluate_agents.py evalúa con semillas 0..999. Si entrenaramos con esas mismas semillas, el agente podría terminar memorizando esas partidas puntuales en vez de
     # aprender a jugar en general. Por eso entreno en un rango de semillas separado.
-    train_seed_offset=100_000,):
+    train_seed_offset=100000,):
     Q = empty_q()
     visits = empty_visits()
     rewards = []
@@ -95,5 +96,9 @@ def train_q_learning(n_episodes=200_000, alpha=0.05,
 
 
 if __name__ == "__main__":
-    Q, visits, rewards, history = train_q_learning(n_episodes=200_000)
-    agent = QLearningAgent(Q)  
+    Q, visits, rewards, history = train_q_learning(n_episodes=1000000)
+
+    # guardo la Q como dict común para poder cargarla después sin tener que reentrenar
+    with open("q_table.pkl", "wb") as f:
+        pickle.dump(dict(Q), f)
+    print(f"Guardado {len(Q)} estados en q_table.pkl")

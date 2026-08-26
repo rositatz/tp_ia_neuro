@@ -73,7 +73,7 @@ class SimpleExpectancyAgent:
 
 def get_state(obs):
     turns_left = HORIZON - obs["turn"] + 1  # Cuantos turnos quedan, incluyendo el actual
-
+    turn_lvl = turn_bucket(turns_left)
 
     # Estas variables pueden crecer para siempre pero para Q learning se necesita que la cantidad de estados sea finita, sino cada estado se ve una sola vez y no se aprende
     # Ponemos un limite a cada variable para solucionar esto con min(valor, limite)
@@ -81,10 +81,23 @@ def get_state(obs):
     dice_lvl = min(obs["num_dice"], 6)
     bonus_lvl = min(obs["dice_bonus"], 6)
     shield_lvl = min(obs["shields"], 2)
-    stored_lvl = min(obs["stored_value"], 10)
-    max_lvl = min(obs["roll_max"], 12)
+    stored_lvl = min(obs["stored_value"], 6)
+    max_lvl = min(obs["roll_max"], 8)
 
-    return (turns_left, gold_lvl, dice_lvl, bonus_lvl, shield_lvl, stored_lvl, max_lvl)
+    return (turn_lvl, gold_lvl, dice_lvl, bonus_lvl, shield_lvl, stored_lvl, max_lvl)
+
+
+def turn_bucket(turns_left):
+    if turns_left <= 6:
+        return turns_left
+    return 6 + (turns_left - 6) // 4
+
+
+# los turnos lejanos los agrupamos de a 4 (no hace falta tanta precisión cuando queda mucha partida), pero los últimos 6 los dejamos exactos, porque ahí sí importa el turno justo
+def turn_bucket(turns_left):
+    if turns_left <= 6:
+        return turns_left
+    return 6 + (turns_left - 6) // 4
 
 def gold_level(gold, num_dice, dice_bonus):
     # Calcula cuantas de las cosas se pueden comprar con el oro que se tiene en el momento
@@ -97,18 +110,15 @@ def gold_level(gold, num_dice, dice_bonus):
             lvl += 1
     return lvl
 
-# SCORE en el ambiente recibe un monto (score_amount) que puede ser cualquier número entre 0 y el oro actual
-# Como no podemos meter una acción continua en una Q-table, la reemplazamos por unas jugadas de puntuar un porcentaje fijo del oro que se tiene en ese momento
-SCORE_CUTS = [0.25, 0.5, 0.75, 1.0]
-
-MOVES = (["PASS", "BUY_DICE", "UPGRADE", "BUY_SHIELD", "STORE_BEST_DIE"] + [f"SCORE_{int(f * 100)}" for f in SCORE_CUTS])
+# Dejamos solo la opción de puntuar todo el oro de una, para que no le convenga ir puntuando de a poquito en medio de la partida
+MOVES = (["PASS", "BUY_DICE", "UPGRADE", "BUY_SHIELD", "STORE_BEST_DIE", "SCORE_ALL"])
 
 N_MOVES = len(MOVES)
 
 def move_to_action(move, obs, env):
     """
     Traduce la jugada a lo que realmete entiende el env: (accion, score_amount)
-    Si la jugada no es calida en este estado, se hace un PASS
+    Si la jugada no es valida en este estado, se hace un PASS
     """
     name = MOVES[move]
     valid = env.get_valid_actions()
@@ -140,13 +150,11 @@ def move_to_action(move, obs, env):
             else:
                 return (PASS, None)
 
-    # Los nombres son del estilo "SCORE_50". Tienen el porcentaje escrito adentro del string. Lo sacamos para saber cuánto oro puntuar
-    frac = int(name.split("_")[1]) / 100.0
-    amount = int(obs["gold"]*frac)
-    return SCORE, amount
+    return SCORE, obs["gold"]
 
 def greedy_action(Q, state):
-    return int(np.argmax(Q[state]))
+    q = Q.get(state, np.zeros(N_MOVES))
+    return int(np.argmax(q))
 
 class QLearningAgent:
     """
