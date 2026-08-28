@@ -34,14 +34,23 @@ def evaluate(agent, n_episodes=1000, seed=0, obs_mode="dict"):
 
 
 if __name__ == "__main__":
+    import pickle
+    import torch
+    from agents import QLearningAgent, QNet, DQNAgent, N_MOVES
+
     with open("q_table.pkl", "rb") as f:
         Q_trained = pickle.load(f)
+
+    dqn_net = QNet(8, N_MOVES)
+    dqn_net.load_state_dict(torch.load("dqn_weights.pt"))
+    dqn_net.eval()
 
     agents = {
         "RandomLegal": RandomLegalAgent(seed=123),
         "SimpleExpectancy": SimpleExpectancyAgent(),
         "QLearning": QLearningAgent(Q_trained),
+        "DQN": DQNAgent(dqn_net),
     }
 
     for name, agent in agents.items():
-        print(name, evaluate(agent, n_episodes=1000, seed=0))  # seed=0: la que pide el leaderboard
+        print(name, evaluate(agent, n_episodes=1000, seed=0))

@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+import torch.nn as nn
 
 from config import (
     HORIZON,
@@ -172,4 +174,54 @@ class QLearningAgent:
 
         return move_to_action(move, obs, env)
 
-    
+
+
+N_FEATURES = 8
+
+def state_vector(obs):
+    # divide cada variable por un numero parecido a su maximo para que a la red le lleguen todos numeros chicos y parecidos entre si
+    return np.array([
+        obs["turn"] / HORIZON,
+        obs["gold"] / 100.0,
+        obs["num_dice"] / 10.0,
+        obs["dice_bonus"] / 10.0,
+        obs["shields"] / 3.0,
+        obs["stored_value"] / 15.0,
+        obs["roll_sum"] / 50.0,
+        obs["roll_max"] / 15.0,
+    ], dtype=np.float32)
+
+
+# la red recibe el estado (8 números) y devuelve un valor por cada jugada posible (N_MOVES números). 
+# Tiene dos capas ocultas 
+class QNet(nn.Module):
+    def __init__(self, n_features, n_moves):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_features, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, n_moves),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class DQNAgent:
+    """
+    Como QLearningAgent, pero en vez de una tabla usa una red neuronal
+    ya entrenada para estimar el valor de cada jugada.
+    """
+
+    def __init__(self, net):
+        self.net = net
+        self.net.eval()  
+
+    def act(self, obs, env):
+        x = torch.from_numpy(state_vector(obs)).unsqueeze(0) 
+        with torch.no_grad():
+            q_values = self.net(x).squeeze(0).numpy()
+        move = int(np.argmax(q_values))
+        return move_to_action(move, obs, env)
