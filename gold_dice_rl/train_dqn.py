@@ -20,18 +20,23 @@ def epsilon_greedy_dqn(net, x, epsilon, rng):
 
 
 def train_dqn(
-    n_episodes=20_000,
+    n_episodes=20000,
     lr=1e-3,             # learning rate del optimizador
     gamma=1.0,
     eps_start=1.0,
     eps_end=0.05,
-    buffer_size=50_000,
+    buffer_size=50000,
+    min_buffer_size=1000,
     batch_size=64,
     target_sync_every=500,  # cada cuántas actualizaciones sincroniza la target network
     eval_every=1000,
     seed=0,
-    train_seed_offset=100_000,
+    train_seed_offset=100000,
 ):
+
+    random.seed(seed)      
+    torch.manual_seed(seed) 
+
     q_net = QNet(8, N_MOVES)
     target_net = QNet(8, N_MOVES)
     target_net.load_state_dict(q_net.state_dict()) 
@@ -70,7 +75,7 @@ def train_dqn(
             obs, x = next_obs, next_x
 
             # entrena con un lote al azar de la memoria 
-            if len(memory) >= batch_size:
+            if len(memory) >= min_buffer_size:
                 batch = random.sample(memory, batch_size)
                 states, moves, batch_rewards, next_states, dones = zip(*batch)
 
@@ -87,8 +92,8 @@ def train_dqn(
                     q_next = target_net(next_states).max(dim=1).values
                     target = rewards_t + gamma * q_next * (1.0 - dones_t)
 
-                loss = loss_fn(q_pred, target)
 
+                loss = loss_fn(q_pred, target)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -110,6 +115,6 @@ def train_dqn(
 
 
 if __name__ == "__main__":
-    q_net, rewards, history = train_dqn(n_episodes=20_000)
+    q_net, rewards, history = train_dqn(n_episodes=20000)
     torch.save(q_net.state_dict(), "dqn_weights.pt")
     print("Guardado dqn_weights.pt")
