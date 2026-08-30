@@ -1,7 +1,7 @@
 import numpy as np
 
 from env import GoldDiceEnv
-from agents import RandomLegalAgent, SimpleExpectancyAgent, QLearningAgent
+from agents import RandomLegalAgent, SimpleExpectancyAgent, QLearningAgent, SARSAAgent
 import pickle
 
 
@@ -40,6 +40,8 @@ if __name__ == "__main__":
 
     with open("q_table.pkl", "rb") as f:
         Q_trained = pickle.load(f)
+    with open("q_table_sarsa.pkl", "rb") as s:
+        Q_trained_SARSA = pickle.load(s)
 
     dqn_net = QNet(8, N_MOVES)
     dqn_net.load_state_dict(torch.load("dqn_weights.pt"))
@@ -50,6 +52,7 @@ if __name__ == "__main__":
         "SimpleExpectancy": SimpleExpectancyAgent(),
         "QLearning": QLearningAgent(Q_trained),
         "DQN": DQNAgent(dqn_net),
+        "SARSA": SARSAAgent(Q_trained_SARSA)
     }
 
     for name, agent in agents.items():
