@@ -115,6 +115,6 @@ def train_dqn(
 
 
 if __name__ == "__main__":
-    q_net, rewards, history = train_dqn(n_episodes=20000)
+    q_net, rewards, history = train_dqn(n_episodes=100000)
     torch.save(q_net.state_dict(), "dqn_weights.pt")
     print("Guardado dqn_weights.pt")

@@ -150,8 +150,10 @@ def move_to_action(move, obs, env):
     return SCORE, obs["gold"]
 
 def greedy_action(Q, state):
-    q = Q.get(state, np.zeros(N_MOVES))
-    return int(np.argmax(q))
+    if state not in Q:
+        # si nunca vio este estado, asegura el oro como puntos antes que arriesgarse con PASS y perderlo todo si es tarde en la partida
+        return MOVES.index("SCORE_ALL")
+    return int(np.argmax(Q[state]))
 
 class QLearningAgent:
     """

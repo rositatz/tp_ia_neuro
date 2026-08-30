@@ -4,7 +4,7 @@ import pickle
 from env import GoldDiceEnv, ACTION_NAMES, N_ACTIONS
 import itertools
 from renderer import plot_episode
-from agents import SARSAAgent, get_state_tuple
+from agents import SARSAAgent, get_state
 from evaluate_agents import evaluate
 from env import (
     SCORE,
@@ -41,11 +41,15 @@ def train_sarsa(
     gamma=1.0,
     eps_start=1.0,
     eps_end=0.05,
-    seed=42
+    seed=42,
+    train_seed_offset=100000,  
+    eval_every=2_500,
 ):
     rng = np.random.default_rng(seed)
     Q = new_q()
     action_counts = np.zeros(6, dtype=int)
+    rewards = []
+
     for ep in range(n_episodes):
 
         epsilon = epsilon_schedule(
@@ -55,9 +59,10 @@ def train_sarsa(
             eps_end
         )
 
+        train_seed = train_seed_offset + ep
         obs = env.reset(seed=seed + ep)
 
-        state = get_state_tuple(obs)
+        state = get_state(obs)
 
         # Elegimos la primera acción A
         action = epsilon_greedy_valid(
@@ -69,6 +74,7 @@ def train_sarsa(
         )
 
         done = False
+        total_reward = 0.0
 
         while not done:
 
@@ -86,8 +92,10 @@ def train_sarsa(
                 score_amount=score_amount
             )
 
+            total_reward += reward
+
             # S'
-            next_state = get_state_tuple(next_obs)
+            next_state = get_state(next_obs)
 
             if done:
 
@@ -128,9 +136,18 @@ def train_sarsa(
                 # obs <- obs'
                 obs = next_obs
 
+        rewards.append(total_reward)
+
+        if (ep + 1) % eval_every == 0 or ep == n_episodes - 1:
+            start = max(0, len(rewards) - 500)
+            recent_reward = np.mean(rewards[start:])
+            print(f"Episodio {ep+1}/{n_episodes}  eps={epsilon:.3f}  "
+                  f"reward_reciente={recent_reward:.2f}  |Q|={len(Q)}")
+
     return Q
 
-def tune_sarsa_hyperparameters(env, n_train_episodes=20_000, n_eval_episodes=1000):
+
+def tune_sarsa_hyperparameters(env, n_train_episodes=20000, n_eval_episodes=1000):
     """
     Busca la mejor combinación de alpha y gamma .
     """

@@ -40,7 +40,7 @@ def record_checkpoint(history, episode_rewards, episode, reward_window=500):
 
 
 
-def train_q_learning(n_episodes=1000000, alpha=0.05,
+def train_q_learning(n_episodes=100000, alpha=0.05,
     gamma=1.0,          # sin descuento: el retorno total = puntos finales, que es justo lo que queremos maximizar
     eps_start=1.0, eps_end=0.05, eval_every=2500,
     seed=0,

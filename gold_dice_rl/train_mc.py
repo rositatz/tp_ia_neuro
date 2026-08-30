@@ -76,7 +76,7 @@ def evaluate(Q, n_episodes=500, seed=0):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", type=int, default=600_000)
+    parser.add_argument("--episodes", type=int, default=100000)
     parser.add_argument("--alpha", type=float, default=0.05)
     parser.add_argument("--eps-start", type=float, default=1.0)
     parser.add_argument("--eps-end", type=float, default=0.05)
@@ -84,7 +84,7 @@ def main():
                         help="fraction of training over which epsilon decays")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=str, default=DEFAULT_Q_PATH)
-    parser.add_argument("--eval-every", type=int, default=50_000)
+    parser.add_argument("--eval-every", type=int, default=50000)
     args = parser.parse_args()
 
     rng = np.random.default_rng(args.seed)
@@ -104,8 +104,8 @@ def main():
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
             mean, std = evaluate(Q, n_episodes=500, seed=10_000)  # held-out seeds
             elapsed = time.time() - t0
-            print(f"ep {ep + 1:>8,} | eps {epsilon:.3f} | states {len(Q):>7,} "
-                  f"| eval mean {mean:7.1f} +/- {std:5.1f} | {elapsed:6.1f}s")
+            print(f"Episodio {ep+1}/{args.episodes}  eps={epsilon:.3f}  "
+                f"reward_reciente={mean:.2f}  |Q|={len(Q)}")
             if mean > best_mean:
                 best_mean = mean
                 best_Q = {s: q.copy() for s, q in Q.items()}

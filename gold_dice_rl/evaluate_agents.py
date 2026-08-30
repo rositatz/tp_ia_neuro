@@ -3,6 +3,7 @@ import numpy as np
 from env import GoldDiceEnv
 from agents import RandomLegalAgent, SimpleExpectancyAgent, QLearningAgent, SARSAAgent
 import pickle
+from mc_agent import MonteCarloAgent
 
 
 
@@ -36,7 +37,8 @@ def evaluate(agent, n_episodes=1000, seed=0, obs_mode="dict"):
 if __name__ == "__main__":
     import pickle
     import torch
-    from agents import QLearningAgent, QNet, DQNAgent, N_MOVES
+    from agents import QLearningAgent, QNet, DQNAgent, N_MOVES, SARSAAgent
+    from mc_agent import MonteCarloAgent
 
     with open("q_table.pkl", "rb") as f:
         Q_trained = pickle.load(f)
@@ -52,7 +54,8 @@ if __name__ == "__main__":
         "SimpleExpectancy": SimpleExpectancyAgent(),
         "QLearning": QLearningAgent(Q_trained),
         "DQN": DQNAgent(dqn_net),
-        "SARSA": SARSAAgent(Q_trained_SARSA)
+        "SARSA": SARSAAgent(Q_trained_SARSA),
+        "MonteCarlo": MonteCarloAgent()
     }
 
     for name, agent in agents.items():
