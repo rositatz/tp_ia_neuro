@@ -79,7 +79,7 @@ def get_state(obs):
 
     # Estas variables pueden crecer para siempre pero para Q learning se necesita que la cantidad de estados sea finita, sino cada estado se ve una sola vez y no se aprende
     # Ponemos un limite a cada variable para solucionar esto con min(valor, limite)
-    gold_lvl = gold_level(obs["gold"], obs["num_dice"], obs["dice_bonus"])
+    gold_lvl = gold_level(obs["gold"])
     dice_lvl = min(obs["num_dice"], 10)
     bonus_lvl = min(obs["dice_bonus"], 10)
     shield_lvl = min(obs["shields"], 2)
@@ -101,16 +101,10 @@ def turn_bucket(turns_left):
         return turns_left
     return 6 + (turns_left - 6) // 4
 
-def gold_level(gold, num_dice, dice_bonus):
-    # Calcula cuantas de las cosas se pueden comprar con el oro que se tiene en el momento
-    thresholds = sorted(set([0, STORE_DIE_COST, SHIELD_COST, get_new_dice_cost(num_dice), get_upgrade_cost(dice_bonus)]))
-
-    lvl = 0
-    for t in thresholds:
-        # Recorre cada costo de menor a mayor y se fija si el oro le alcanza, cada vez que si suma 1
-        if gold >= t:
-            lvl += 1
-    return lvl
+def gold_level(gold):
+    if gold <= 0:
+        return 0
+    return int(np.log(gold + 1) / np.log(1.5))
 
 # Dejamos solo la opción de puntuar todo el oro de una, para que no le convenga ir puntuando de a poquito en medio de la partida
 MOVES = (["PASS", "BUY_DICE", "UPGRADE", "BUY_SHIELD", "STORE_BEST_DIE", "SCORE_ALL"])
