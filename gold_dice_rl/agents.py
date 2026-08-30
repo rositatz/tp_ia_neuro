@@ -214,8 +214,10 @@ class DQNAgent:
         self.net.eval()  
 
     def act(self, obs, env):
-        x = torch.from_numpy(state_vector(obs)).unsqueeze(0) 
+        x = torch.from_numpy(state_vector(obs)).unsqueeze(0)
         with torch.no_grad():
             q_values = self.net(x).squeeze(0).numpy()
         move = int(np.argmax(q_values))
         return move_to_action(move, obs, env)
+
+from mc_agent import MonteCarloAgent
