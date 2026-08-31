@@ -1,5 +1,7 @@
 import argparse
+import json
 import pickle
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -17,6 +19,7 @@ from agents import (
 )
 from artifact_paths import (
     DQN_WEIGHTS_PATH,
+    EVALUATION_RESULTS_PATH,
     MONTE_CARLO_TABLE_PATH,
     QLEARNING_TABLE_PATH,
     SARSA_TABLE_PATH,
@@ -108,21 +111,43 @@ def positive_int(value):
     return number
 
 
+def save_results(results, n_episodes, seed, output_path):
+    payload = {
+        "n_episodes": n_episodes,
+        "seed_start": seed,
+        "seed_end": seed + n_episodes - 1,
+        "agents": results,
+    }
+    with output_path.open("w", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2)
+        file.write("\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Evaluate every agent on the same episode seeds."
     )
     parser.add_argument("--episodes", type=positive_int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=EVALUATION_RESULTS_PATH,
+    )
     args = parser.parse_args()
 
+    results = {}
     for name, agent in load_agents().items():
         result = evaluate(
             agent,
             n_episodes=args.episodes,
             seed=args.seed,
         )
+        results[name] = result
         print(name, result)
+
+    save_results(results, args.episodes, args.seed, args.out)
+    print(f"Resultados guardados en {args.out}")
 
 
 if __name__ == "__main__":
