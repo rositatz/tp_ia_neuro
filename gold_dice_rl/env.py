@@ -261,7 +261,8 @@ class GoldDiceEnv:
         return mask
 
     def get_valid_actions(self):
-        return [action for action in range(N_ACTIONS) if self.get_action_mask()[action] == 1]
+        mask = self.get_action_mask()
+        return [action for action in range(N_ACTIONS) if mask[action] == 1]
 
     def get_valid_score_amounts(self):
         return list(range(self.gold + 1))
