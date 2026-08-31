@@ -2,8 +2,6 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-
-from state_encoding import encode_tabular_state
 from artifact_paths import MONTE_CARLO_TABLE_PATH
 
 from config import (
@@ -23,12 +21,29 @@ from env import (
     N_ACTIONS,
 )
 
+
+NUM_DICE_CAP = 8
+DICE_BONUS_CAP = 8
+SHIELD_CAP = 2
+
+GOLD_THRESHOLDS = (
+    1, 4, 5, 8, 9, 14, 18, 24,
+    32, 42, 55, 72, 95, 130, 180, 250,
+)
+
+
+def gold_bucket(gold):
+    return sum(int(gold) >= threshold for threshold in GOLD_THRESHOLDS)
+
+
 def encode_state(obs):
-    """
-    Mantiene el nombre usado por train_mc.py, pero delega al
-    encoder tabular compartido.
-    """
-    return encode_tabular_state(obs)
+    return (
+        HORIZON - int(obs["turn"]),
+        min(int(obs["num_dice"]), NUM_DICE_CAP),
+        min(int(obs["dice_bonus"]), DICE_BONUS_CAP),
+        min(int(obs["shields"]), SHIELD_CAP),
+        gold_bucket(obs["gold"]),
+    )
 
 
 def valid_action_mask(obs):
