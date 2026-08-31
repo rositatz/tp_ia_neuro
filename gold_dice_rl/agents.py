@@ -2,11 +2,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from state_encoding import encode_tabular_state
+
 from config import (
     HORIZON,
     DICE_FACES,
     SHIELD_COST,
-    STORE_DIE_COST,       
     get_new_dice_cost,
     get_upgrade_cost,
 )
@@ -75,37 +76,11 @@ class SimpleExpectancyAgent:
 
 
 def get_state(obs):
-    turns_left = HORIZON - obs["turn"] + 1  # Cuantos turnos quedan, incluyendo el actual
-    turn_lvl = turn_bucket(turns_left)
-
-    # Estas variables pueden crecer para siempre pero para Q learning se necesita que la cantidad de estados sea finita, sino cada estado se ve una sola vez y no se aprende
-    # Ponemos un limite a cada variable para solucionar esto con min(valor, limite)
-    gold_lvl = gold_level(obs["gold"])
-    dice_lvl = min(obs["num_dice"], 10)
-    bonus_lvl = min(obs["dice_bonus"], 10)
-    shield_lvl = min(obs["shields"], 2)
-    stored_lvl = min(obs["stored_value"], 6)
-    max_lvl = min(obs["roll_max"], 8)
-
-    return (turn_lvl, gold_lvl, dice_lvl, bonus_lvl, shield_lvl, stored_lvl, max_lvl)
-
-
-def turn_bucket(turns_left):
-    if turns_left <= 6:
-        return turns_left
-    return 6 + (turns_left - 6) // 4
-
-
-# los turnos lejanos los agrupamos de a 4 (no hace falta tanta precisión cuando queda mucha partida), pero los últimos 6 los dejamos exactos, porque ahí sí importa el turno justo
-def turn_bucket(turns_left):
-    if turns_left <= 6:
-        return turns_left
-    return 6 + (turns_left - 6) // 4
-
-def gold_level(gold):
-    if gold <= 0:
-        return 0
-    return int(np.log(gold + 1) / np.log(1.5))
+    """
+    Mantiene el nombre usado por Q-Learning y SARSA, pero delega
+    la representacion al encoder tabular compartido.
+    """
+    return encode_tabular_state(obs)
 
 # Dejamos solo la opción de puntuar todo el oro de una, para que no le convenga ir puntuando de a poquito en medio de la partida
 MOVES = (["PASS", "BUY_DICE", "UPGRADE", "BUY_SHIELD", "STORE_BEST_DIE", "SCORE_ALL"])

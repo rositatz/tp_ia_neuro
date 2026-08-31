@@ -3,6 +3,8 @@ import pickle
 
 import numpy as np
 
+from state_encoding import encode_tabular_state
+
 from config import (
     HORIZON,
     SHIELD_COST,
@@ -20,30 +22,12 @@ from env import (
     N_ACTIONS,
 )
 
-NUM_DICE_CAP = 8
-DICE_BONUS_CAP = 8
-SHIELD_CAP = 2
-
-GOLD_THRESHOLDS = (1, 4, 5, 8, 9, 14, 18, 24, 32, 42, 55, 72, 95, 130, 180, 250)
-
-
-def gold_bucket(gold):
-    b = 0
-    for t in GOLD_THRESHOLDS:
-        if gold >= t:
-            b += 1
-        else:
-            break
-    return b
-
-
 def encode_state(obs):
-    turns_left = HORIZON - int(obs["turn"])
-    num_dice = min(int(obs["num_dice"]), NUM_DICE_CAP)
-    dice_bonus = min(int(obs["dice_bonus"]), DICE_BONUS_CAP)
-    shields = min(int(obs["shields"]), SHIELD_CAP)
-    gb = gold_bucket(int(obs["gold"]))
-    return (turns_left, num_dice, dice_bonus, shields, gb)
+    """
+    Mantiene el nombre usado por train_mc.py, pero delega al
+    encoder tabular compartido.
+    """
+    return encode_tabular_state(obs)
 
 
 def valid_action_mask(obs):
