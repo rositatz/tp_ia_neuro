@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from env import GoldDiceEnv
+from artifact_paths import DQN_WEIGHTS_PATH
 from agents import (
     state_vector,
     get_valid_move_mask,
@@ -153,5 +154,5 @@ def train_dqn(
 
 if __name__ == "__main__":
     q_net, rewards, history = train_dqn(n_episodes=100000)
-    torch.save(q_net.state_dict(), "dqn_weights.pt")
-    print("Guardado dqn_weights.pt")
+    torch.save(q_net.state_dict(), DQN_WEIGHTS_PATH)
+    print(f"Guardado {DQN_WEIGHTS_PATH}")

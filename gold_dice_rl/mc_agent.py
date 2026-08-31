@@ -1,9 +1,10 @@
-import os
 import pickle
+from pathlib import Path
 
 import numpy as np
 
 from state_encoding import encode_tabular_state
+from artifact_paths import MONTE_CARLO_TABLE_PATH
 
 from config import (
     HORIZON,
@@ -49,7 +50,7 @@ def valid_action_mask(obs):
 # --------------------------------------------------------------------------- #
 # Agent
 # --------------------------------------------------------------------------- #
-DEFAULT_Q_PATH = os.path.join(os.path.dirname(__file__), "mc_q.pkl")
+DEFAULT_Q_PATH = MONTE_CARLO_TABLE_PATH
 
 
 class MonteCarloAgent:
@@ -65,13 +66,14 @@ class MonteCarloAgent:
     # -- persistence ------------------------------------------------------- #
     @staticmethod
     def load_q(q_path):
-        if q_path and os.path.exists(q_path):
-            with open(q_path, "rb") as f:
+        path = Path(q_path) if q_path else None
+        if path and path.is_file():
+            with path.open("rb") as f:
                 return pickle.load(f)
         return {}
 
     def save_q(self, q_path=DEFAULT_Q_PATH):
-        with open(q_path, "wb") as f:
+        with Path(q_path).open("wb") as f:
             pickle.dump(self.Q, f)
 
     # -- action selection -------------------------------------------------- #

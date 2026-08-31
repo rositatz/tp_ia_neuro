@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 
 from env import GoldDiceEnv
+from artifact_paths import QLEARNING_TABLE_PATH
 from agents import (
     get_state,
     get_valid_move_mask,
@@ -117,6 +118,6 @@ if __name__ == "__main__":
     Q, visits, rewards, history = train_q_learning(n_episodes=1000000)
 
     # guardo la Q como dict común para poder cargarla después sin tener que reentrenar
-    with open("q_table.pkl", "wb") as f:
-        pickle.dump(dict(Q), f)
-    print(f"Guardado {len(Q)} estados en q_table.pkl")
+    with QLEARNING_TABLE_PATH.open("wb") as file:
+        pickle.dump(dict(Q), file)
+    print(f"Guardado {len(Q)} estados en {QLEARNING_TABLE_PATH}")

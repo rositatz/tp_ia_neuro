@@ -2,6 +2,7 @@ import numpy as np
 from collections import defaultdict
 import pickle
 from env import GoldDiceEnv, N_ACTIONS
+from artifact_paths import SARSA_TABLE_PATH
 import itertools
 from agents import SARSAAgent, get_state
 from evaluate_agents import evaluate
@@ -219,6 +220,7 @@ if __name__ == "__main__":
         eps_start=1.0,
         eps_end=0.05
     )
-    with open("q_table_sarsa.pkl", "wb") as f: pickle.dump(dict(final_Q), f)
+    with SARSA_TABLE_PATH.open("wb") as file:
+        pickle.dump(dict(final_Q), file)
         
-    print("¡Entrenamiento terminado y tabla guardada!")
+    print(f"¡Entrenamiento terminado y tabla guardada en {SARSA_TABLE_PATH}!")
