@@ -7,16 +7,28 @@ import torch.nn as nn
 import torch.optim as optim
 
 from env import GoldDiceEnv
-from agents import state_vector, move_to_action, N_MOVES, QNet, DQNAgent
+from agents import (
+    state_vector,
+    get_valid_move_mask,
+    move_to_action,
+    N_MOVES,
+    QNet,
+    DQNAgent,
+)
 from train_qlearning import epsilon_schedule 
 
 
-def epsilon_greedy_dqn(net, x, epsilon, rng):
+def epsilon_greedy_dqn(net, x, valid_move_mask, epsilon, rng):
+    valid_moves = np.flatnonzero(valid_move_mask)
+
     if rng.random() < epsilon:
-        return int(rng.integers(N_MOVES))
+        return int(rng.choice(valid_moves))
+
     with torch.no_grad():
         q_values = net(torch.from_numpy(x).unsqueeze(0)).squeeze(0).numpy()
-    return int(np.argmax(q_values))
+
+    masked_q_values = np.where(valid_move_mask, q_values, -np.inf)
+    return int(np.argmax(masked_q_values))
 
 
 def train_dqn(
@@ -63,24 +75,44 @@ def train_dqn(
         total_reward = 0.0
 
         while not done:
-            move = epsilon_greedy_dqn(q_net, x, epsilon, rng)
+            valid_move_mask = get_valid_move_mask(obs, env)
+            move = epsilon_greedy_dqn(
+                q_net,
+                x,
+                valid_move_mask,
+                epsilon,
+                rng,
+            )
             action, score_amount = move_to_action(move, obs, env)
 
             next_obs, reward, done, info = env.step(action, score_amount=score_amount)
             next_x = state_vector(next_obs)
+            next_valid_move_mask = get_valid_move_mask(next_obs, env)
 
             # guarda la transición en la memoria en vez de entrenar ya mismo
-            memory.append((x, move, reward, next_x, done))
+            memory.append(
+                (x, move, reward, next_x, next_valid_move_mask, done)
+            )
             total_reward += reward
             obs, x = next_obs, next_x
 
             # entrena con un lote al azar de la memoria 
             if len(memory) >= min_buffer_size:
                 batch = random.sample(memory, batch_size)
-                states, moves, batch_rewards, next_states, dones = zip(*batch)
+                (
+                    states,
+                    moves,
+                    batch_rewards,
+                    next_states,
+                    next_valid_move_masks,
+                    dones,
+                ) = zip(*batch)
 
                 states = torch.from_numpy(np.array(states))
                 next_states = torch.from_numpy(np.array(next_states))
+                next_valid_move_masks_t = torch.from_numpy(
+                    np.array(next_valid_move_masks, dtype=bool)
+                )
                 moves_t = torch.tensor(moves, dtype=torch.long)
                 rewards_t = torch.tensor(batch_rewards, dtype=torch.float32)
                 dones_t = torch.tensor(dones, dtype=torch.float32)
@@ -89,7 +121,12 @@ def train_dqn(
                 q_pred = q_net(states).gather(1, moves_t.unsqueeze(1)).squeeze(1)
 
                 with torch.no_grad():
-                    q_next = target_net(next_states).max(dim=1).values
+                    q_next_all = target_net(next_states)
+                    q_next_valid = q_next_all.masked_fill(
+                        ~next_valid_move_masks_t,
+                        torch.finfo(q_next_all.dtype).min,
+                    )
+                    q_next = q_next_valid.max(dim=1).values
                     target = rewards_t + gamma * q_next * (1.0 - dones_t)
 
 

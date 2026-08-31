@@ -87,6 +87,34 @@ MOVES = (["PASS", "BUY_DICE", "UPGRADE", "BUY_SHIELD", "STORE_BEST_DIE", "SCORE_
 
 N_MOVES = len(MOVES)
 
+MOVE_TO_ENV_ACTION = (
+    PASS,
+    BUY_DICE,
+    UPGRADE,
+    BUY_SHIELD,
+    STORE_BEST_DIE,
+    SCORE,
+)
+
+
+def get_valid_move_mask(obs, env):
+    """
+    Devuelve una mascara booleana en el orden de MOVES.
+
+    SCORE_ALL se considera util solamente cuando hay oro para convertir.
+    PASS siempre queda disponible, por lo que la mascara nunca esta vacia.
+    """
+    valid_actions = set(env.get_valid_actions())
+    mask = np.array(
+        [action in valid_actions for action in MOVE_TO_ENV_ACTION],
+        dtype=bool,
+    )
+
+    if int(obs["gold"]) <= 0:
+        mask[MOVES.index("SCORE_ALL")] = False
+
+    return mask
+
 def move_to_action(move, obs, env):
     """
     Traduce la jugada a lo que realmete entiende el env: (accion, score_amount)
@@ -124,11 +152,17 @@ def move_to_action(move, obs, env):
 
     return SCORE, obs["gold"]
 
-def greedy_action(Q, state):
+def greedy_action(Q, state, valid_move_mask):
+    valid_moves = np.flatnonzero(valid_move_mask)
+
     if state not in Q:
-        # si nunca vio este estado, asegura el oro como puntos antes que arriesgarse con PASS y perderlo todo si es tarde en la partida
-        return MOVES.index("SCORE_ALL")
-    return int(np.argmax(Q[state]))
+        score_move = MOVES.index("SCORE_ALL")
+        if valid_move_mask[score_move]:
+            return score_move
+        return int(valid_moves[0])
+
+    masked_q_values = np.where(valid_move_mask, Q[state], -np.inf)
+    return int(np.argmax(masked_q_values))
 
 class QLearningAgent:
     """
@@ -142,7 +176,8 @@ class QLearningAgent:
 
     def act(self, obs, env):
         state = get_state(obs)
-        move = greedy_action(self.Q, state)
+        valid_move_mask = get_valid_move_mask(obs, env)
+        move = greedy_action(self.Q, state, valid_move_mask)
 
         return move_to_action(move, obs, env)
 
@@ -195,7 +230,9 @@ class DQNAgent:
         x = torch.from_numpy(state_vector(obs)).unsqueeze(0)
         with torch.no_grad():
             q_values = self.net(x).squeeze(0).numpy()
-        move = int(np.argmax(q_values))
+        valid_move_mask = get_valid_move_mask(obs, env)
+        masked_q_values = np.where(valid_move_mask, q_values, -np.inf)
+        move = int(np.argmax(masked_q_values))
         return move_to_action(move, obs, env)
 
 from mc_agent import MonteCarloAgent

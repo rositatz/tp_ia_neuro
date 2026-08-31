@@ -3,7 +3,13 @@ import numpy as np
 import pickle
 
 from env import GoldDiceEnv
-from agents import get_state, move_to_action, N_MOVES, QLearningAgent
+from agents import (
+    get_state,
+    get_valid_move_mask,
+    move_to_action,
+    N_MOVES,
+    QLearningAgent,
+)
 
 # Q es un diccionario, para cada estado guarda un array con el valor de cada una de las N_MOVES jugadas posibles. 
 # Si un estado nunca se visitó, defaultdict lo crea solo con ceros (Q(s,a) inicializado arbitrariamente)
@@ -15,13 +21,16 @@ def empty_q():
 def empty_visits():
     return defaultdict(lambda: np.zeros(N_MOVES, dtype=int))
 
-def epsilon_greedy(Q, state, epsilon, rng):
+def epsilon_greedy(Q, state, valid_move_mask, epsilon, rng):
+    valid_moves = np.flatnonzero(valid_move_mask)
+
     # jugada al azar, si no la de mayor Q para ese estado
     if rng.random() < epsilon:
-        return int(rng.integers(N_MOVES))
+        return int(rng.choice(valid_moves))
 
     q = Q[state]
-    best_moves = np.flatnonzero(q == q.max()) # por si hay empate, elijo al azar entre los mejores
+    best_value = q[valid_moves].max()
+    best_moves = valid_moves[q[valid_moves] == best_value]
     return int(rng.choice(best_moves))
 
 
@@ -65,7 +74,14 @@ def train_q_learning(n_episodes=100000, alpha=0.05,
         total_reward = 0.0
 
         while not done:
-            move = epsilon_greedy(Q, state, epsilon, rng)
+            valid_move_mask = get_valid_move_mask(obs, env)
+            move = epsilon_greedy(
+                Q,
+                state,
+                valid_move_mask,
+                epsilon,
+                rng,
+            )
             action, score_amount = move_to_action(move, obs, env)
 
             next_obs, reward, done, info = env.step(action, score_amount=score_amount)
@@ -78,7 +94,9 @@ def train_q_learning(n_episodes=100000, alpha=0.05,
             if done:
                 target = reward  # no hay estado siguiente, el objetivo es directamente la recompensa
             else:
-                target = reward + gamma * np.max(Q[next_state])
+                next_valid_move_mask = get_valid_move_mask(next_obs, env)
+                next_valid_moves = np.flatnonzero(next_valid_move_mask)
+                target = reward + gamma * np.max(Q[next_state][next_valid_moves])
 
             Q[state][move] += alpha * (target - Q[state][move])
 
