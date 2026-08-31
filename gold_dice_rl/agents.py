@@ -19,7 +19,6 @@ from env import (
     UPGRADE,
     BUY_SHIELD,
     STORE_BEST_DIE,
-    N_ACTIONS
 )
 
 
@@ -236,22 +235,8 @@ class DQNAgent:
         return move_to_action(move, obs, env)
 
 from mc_agent import MonteCarloAgent
-def get_state_tuple(obs):
-    return (
-        int(obs["turn"]),
-        int(obs["gold"]),
-        int(obs["num_dice"]),
-        int(obs["dice_bonus"]),
-        int(obs["shields"]),
-        int(obs["roll_max"])
-    )
-def get_q_values(Q, state):
-    if state not in Q:
-        q = np.zeros(N_ACTIONS, dtype=float)
-        q[SCORE] = 0.1
-        return q
 
-    return Q[state]
+
 class SARSAAgent:
 
     def __init__(self, Q):
@@ -264,10 +249,10 @@ class SARSAAgent:
         valid_actions = env.get_valid_actions()
 
         if state not in self.Q:
-                    if SCORE in valid_actions:
-                        return SCORE, obs["gold"]
+            if SCORE in valid_actions and obs["gold"] > 0:
+                return SCORE, obs["gold"]
 
-                    return PASS, None
+            return PASS, None
 
         q_values = self.Q[state]
         best_action = max(

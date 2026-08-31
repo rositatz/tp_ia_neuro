@@ -1,9 +1,8 @@
 import numpy as np
 from collections import defaultdict
 import pickle
-from env import GoldDiceEnv, ACTION_NAMES, N_ACTIONS
+from env import GoldDiceEnv, N_ACTIONS
 import itertools
-from renderer import plot_episode
 from agents import SARSAAgent, get_state
 from evaluate_agents import evaluate
 from env import (
@@ -12,7 +11,7 @@ from env import (
 
 def new_q():
     return defaultdict(
-        lambda: np.zeros(6, dtype=float)
+        lambda: np.zeros(N_ACTIONS, dtype=float)
     )
 
 def epsilon_greedy_valid(Q, state, valid_actions, epsilon, rng):
@@ -47,7 +46,6 @@ def train_sarsa(
 ):
     rng = np.random.default_rng(seed)
     Q = new_q()
-    action_counts = np.zeros(6, dtype=int)
     rewards = []
 
     for ep in range(n_episodes):
@@ -60,7 +58,7 @@ def train_sarsa(
         )
 
         train_seed = train_seed_offset + ep
-        obs = env.reset(seed=seed + ep)
+        obs = env.reset(seed=train_seed)
 
         state = get_state(obs)
 
@@ -77,9 +75,6 @@ def train_sarsa(
         total_reward = 0.0
 
         while not done:
-
-            action_counts[action] += 1
-
             # SCORE necesita score_amount
             if action == SCORE:
                 score_amount = obs["gold"]
@@ -183,9 +178,15 @@ def tune_sarsa_hyperparameters(env, n_train_episodes=20000, n_eval_episodes=1000
         # 3. Lo evaluamos 100% greedy usando tu agente y función de evaluación
         agent = SARSAAgent(Q_trained)
         
-        eval_score = evaluate(agent, n_episodes=n_eval_episodes, seed=0)
-        print(f"Puntaje obtenido: {eval_score["mean"]:.3f} | Estados explorados: {len(Q_trained)}\n")
-        print(f"Puntaje obtenido: {eval_score["mean"]}\n")
+        eval_score = evaluate(
+            agent,
+            n_episodes=n_eval_episodes,
+            seed=10_000,
+        )
+        print(
+            f"Puntaje de validacion: {eval_score['mean']:.3f} | "
+            f"Estados explorados: {len(Q_trained)}\n"
+        )
         
         # 4. Guardamos si es el mejor hasta ahora
         if eval_score["mean"] > best_score:
