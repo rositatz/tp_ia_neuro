@@ -27,7 +27,7 @@ def greedy_from_q(Q, state, mask, rng):
 def run_episode(env, Q, epsilon, rng, train=True, alpha=0.05):
     obs = env.reset(seed=int(rng.integers(0, 2**31 - 1)))
     done = False
-    trajectory = []  # (state, action, reward)
+    trajectory = []  # (estado, acción, reward)
 
     while not done:
         turns_left = HORIZON - int(obs["turn"])
@@ -102,7 +102,7 @@ def main():
         run_episode(env, Q, epsilon, rng, train=True, alpha=args.alpha)
 
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
-            mean, std = evaluate(Q, n_episodes=500, seed=10_000)  # held-out seeds
+            mean, std = evaluate(Q, n_episodes=500, seed=10000)  # semillas aparte, no usadas para entrenar
             elapsed = time.time() - t0
             print(f"Episodio {ep+1}/{args.episodes}  eps={epsilon:.3f}  "
                 f"reward_reciente={mean:.2f}  |Q|={len(Q)}")
@@ -112,7 +112,7 @@ def main():
 
     final = best_Q if best_Q is not None else Q
     MonteCarloAgent(Q=final).save_q(args.out)
-    print(f"\nSaved {len(final):,} states to {args.out} | best eval mean {best_mean:.1f}")
+    print(f"\nGuardados  {len(final):,} estados en {args.out} | mejor promedio en eval {best_mean:.1f}")
 
 
 if __name__ == "__main__":

@@ -62,9 +62,7 @@ def valid_action_mask(obs):
     return mask
 
 
-# --------------------------------------------------------------------------- #
-# Agent
-# --------------------------------------------------------------------------- #
+# Agente
 DEFAULT_Q_PATH = os.path.join(os.path.dirname(__file__), "mc_q.pkl")
 
 
@@ -78,7 +76,7 @@ class MonteCarloAgent:
         else:
             self.Q = self.load_q(q_path)
 
-    # -- persistence ------------------------------------------------------- #
+    # persistencia  
     @staticmethod
     def load_q(q_path):
         if q_path and os.path.exists(q_path):
@@ -90,9 +88,11 @@ class MonteCarloAgent:
         with open(q_path, "wb") as f:
             pickle.dump(self.Q, f)
 
-    # -- action selection -------------------------------------------------- #
+    # selección de acción
     def _greedy_action(self, state, mask):
-        """Best valid action for `state`; None if the state is unknown."""
+        """
+        Mejor acción válida para `state`; None si el estado es desconocido.
+        """
         q = self.Q.get(state)
         if q is None:
             return None
@@ -109,7 +109,7 @@ class MonteCarloAgent:
 
         if turns_left == 0:
             return SCORE
-        # value of one more die / upgrade over the remaining turns vs its cost
+        # valor de un dado/mejora más durante los turnos restantes, comparado con su costo
         if mask[BUY_DICE] and (3.5 + dice_bonus) * turns_left > get_new_dice_cost(num_dice) * 1.5:
             return BUY_DICE
         if mask[UPGRADE] and num_dice * turns_left > get_upgrade_cost(dice_bonus) * 1.5:
@@ -124,12 +124,12 @@ class MonteCarloAgent:
         mask = valid_action_mask(obs)
         turns_left = HORIZON - int(obs["turn"])
 
-        # Last turn: any gold left would be wasted, so always lock it in.
+        # Último turno: cualquier oro que quede se pierde, así que lo aseguramos siempre.
         if turns_left == 0:
             gold = int(obs["gold"])
             return (SCORE, gold) if gold > 0 else (PASS, None)
 
-        # Optional exploration (used during training via act()).
+        # Exploración opcional (se usa durante el entrenamiento a través de act()).
         if self.epsilon > 0.0 and self.rng.random() < self.epsilon:
             action = int(self.rng.choice(np.flatnonzero(mask)))
         else:
